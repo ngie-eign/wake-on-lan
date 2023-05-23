@@ -27,8 +27,6 @@ import typing
 import macaddress
 
 
-Numeric = int | float
-
 # This does not use ``echo`` like shown on wikipedia because it returns port 4 on
 # OSX (4 -> legacy Apple echo service, per /etc/services).
 DISCARD_PORT = socket.getservbyname("discard")
@@ -46,7 +44,7 @@ NDP_MAC_IP_RE = re.compile(
 )
 
 
-class Node:
+class Node:  # pylint: disable=R0903
     """A simple container class for mac_address to ip_address mappings.
 
     The parameters in this class correspond with groups described in the above regular
@@ -57,7 +55,8 @@ class Node:
 
     def __init__(self, mac_address: str, ip_address: str):
         self.mac_address: str = ":".join(
-            "{:02x}".format(int(nibble, 16)) for nibble in mac_address.split(":")
+            "{:02x}".format(int(nibble, 16))
+            for nibble in mac_address.split(":")  # pylint: disable=C0209
         )
         self.ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address = (
             ipaddress.ip_address(ip_address)
@@ -150,6 +149,11 @@ def mac_address_to_bytes(mac_address: str) -> macaddress.MAC:
 
 
 class IPAddressAction(argparse.Action):
+    """--ip-address parser helper.
+
+    TODO: figure out why type= isn't working as expected.
+    """
+
     def __init__(
         self,
         option_strings: list[str],
@@ -175,6 +179,14 @@ class IPAddressAction(argparse.Action):
 
 
 def parse_target_from_args(argv: list[str] | None = None) -> str:
+    """Parse a target from either --ip-address or --mac-address.
+
+    Raises:
+        ValueError: invalid arguments were specified on the command line.
+
+    Returns:
+        A MAC address which can be passed to `send_magic_packet`.
+    """
     parser = argparse.ArgumentParser()
     target_parser = parser.add_mutually_exclusive_group(required=True)
     target_parser.add_argument("--ip-address", action=IPAddressAction, dest="target")
@@ -188,6 +200,7 @@ def parse_target_from_args(argv: list[str] | None = None) -> str:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Eponymous main(..)."""
     logging.basicConfig(
         format="%(filename)s: %(levelname)s: %(message)s", level=logging.INFO
     )
