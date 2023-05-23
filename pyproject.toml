@@ -51,11 +51,16 @@ legacy_tox_ini = """
     [tox]
     min_version = 4.0
     env_list =
+        flake8
         type
+
+    [testenv:flake8]
+        deps = flake8
+        commands = python -m flake8 src
 
     [testenv:type]
         deps = mypy
-        commands = mypy src
+        commands = python -m mypy src
 """
 
 [build-system]
