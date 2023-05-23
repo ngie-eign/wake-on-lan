@@ -1,0 +1,71 @@
+[project]
+name = "wol"
+version = "0.1.0"
+description = "WOL (Wake-On-Lan) utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "BSD-2-Clause"}
+keywords = ["network"]
+authors = [
+    {name = "Enji Cooper", email = "yaneurabeya@gmail.com"}
+]
+maintainers = [
+    {name = "Enji Cooper", email = "yaneurabeya@gmail.com"}
+]
+classifiers = [
+    "License :: OSI Approved :: BSD 2-Clause",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    "macaddress==2.0.2"
+]
+
+[project.scripts]
+wol = "wol.__main__:main"
+
+[project.urls]
+"Homepage" = "https://github.com/ngie-eign/wol"
+"Bug Reports" = "https://github.com/ngie-eign/wol/issues"
+"Source" = "https://github.com/ngie-eign/wol"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.mypy]
+strict_optional = true
+warn_return_any = true
+warn_unused_ignores = false
+
+[tool.setuptools]
+package-data = {"wol" = ["*.md"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["wol.tests*"]
+
+[tool.tox]
+legacy_tox_ini = """
+    [tox]
+    min_version = 4.0
+    env_list =
+        type
+
+    [testenv:type]
+        deps = mypy
+        commands = mypy src
+"""
+
+[build-system]
+requires = ["setuptools", "setuptools-scm", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[[tool.mypy.overrides]]
+module = "wol.*"
+allow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "macaddress.*"
+ignore_missing_imports = true
