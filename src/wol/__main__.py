@@ -23,6 +23,7 @@ import re
 import socket
 import subprocess
 import typing
+from typing import Self
 
 import macaddress
 
@@ -53,10 +54,10 @@ class Node:  # pylint: disable=R0903
     This class also handles some degree of data massaging/validation.
     """
 
-    def __init__(self, mac_address: str, ip_address: str):
+    def __init__(self: Self, mac_address: str, ip_address: str):
         self.mac_address: str = ":".join(
-            "{:02x}".format(int(nibble, 16))
-            for nibble in mac_address.split(":")  # pylint: disable=C0209
+            "{:02x}".format(int(nibble, 16))  # pylint: disable=C0209
+            for nibble in mac_address.split(":")
         )
         self.ip_address: ipaddress.IPv4Address | ipaddress.IPv6Address = (
             ipaddress.ip_address(ip_address)
@@ -149,13 +150,10 @@ def mac_address_to_bytes(mac_address: str) -> macaddress.MAC:
 
 
 class IPAddressAction(argparse.Action):
-    """--ip-address parser helper.
-
-    TODO: figure out why type= isn't working as expected.
-    """
+    """--ip-address parser helper."""
 
     def __init__(
-        self,
+        self: Self,
         option_strings: list[str],
         dest: str,
         *args,
@@ -166,15 +164,59 @@ class IPAddressAction(argparse.Action):
             raise ValueError("nargs not supported.")
         super().__init__(option_strings, dest, *args, **kwargs)
 
+    def parse_address_arg(
+        self: Self,  # pylint: disable=W0613
+        arg: str,
+    ) -> str:
+        """A proxy for parsing IP addresses."""
+        return parse_ip_address_arg(arg)
+
     def __call__(
-        self,
+        self: Self,
         parser: argparse.ArgumentParser,
         namespace: argparse.Namespace,
         values,
         option_string: str | None = None,
     ) -> None:
         typing.cast(str, values)
-        mac_address = parse_ip_address_arg(values)
+        mac_address = self.parse_address_arg(values)
+        setattr(namespace, self.dest, mac_address_to_bytes(mac_address))
+
+
+class HostAction(IPAddressAction):
+    """--host parser helper."""
+
+    def parse_address_arg(self: Self, arg: str):
+        try:
+            resolved_hosts = socket.getaddrinfo(
+                host=arg,
+                port=0,
+                flags=socket.AI_ADDRCONFIG,
+            )
+        except OSError as exc:
+            raise ValueError(f"Could not resolve host: {arg}") from exc
+
+        for i, (_, _, _, _, resolved_host_tuple) in enumerate(resolved_hosts):
+            try:
+                resolved_address = resolved_host_tuple[0]
+                return super().parse_address_arg(resolved_address)
+            except ValueError:
+                if i == len(resolved_hosts) - 1:
+                    raise
+
+        raise ValueError(
+            f"--host {arg!r} didn't resolve any hosts & didn't raise an exception."
+        )
+
+    def __call__(
+        self: Self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values,
+        option_string: str | None = None,
+    ) -> None:
+        typing.cast(str, values)
+        mac_address = self.parse_address_arg(values)
         setattr(namespace, self.dest, mac_address_to_bytes(mac_address))
 
 
@@ -189,7 +231,8 @@ def parse_target_from_args(argv: list[str] | None = None) -> str:
     """
     parser = argparse.ArgumentParser()
     target_parser = parser.add_mutually_exclusive_group(required=True)
-    target_parser.add_argument("--ip-address", action=IPAddressAction, dest="target")
+    target_parser.add_argument("--host", action=HostAction, dest="target")
+    target_parser.add_argument("--ip", action=IPAddressAction, dest="target")
     target_parser.add_argument(
         "--mac-address", dest="target", type=mac_address_to_bytes
     )
