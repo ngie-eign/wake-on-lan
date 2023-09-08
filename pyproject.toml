@@ -3,7 +3,7 @@ name = "wol"
 version = "0.1.1"
 description = "WOL (Wake-On-Lan) utilities"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "BSD-2-Clause"}
 keywords = ["network"]
 authors = [
@@ -14,7 +14,6 @@ maintainers = [
 ]
 classifiers = [
     "License :: OSI Approved :: BSD 2-Clause",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",
@@ -33,7 +32,7 @@ wol = "wol.__main__:main"
 
 [tool.black]
 line-length = 88
-target-version = ['py310']
+target-version = ['py311']
 
 [tool.mypy]
 strict_optional = true
